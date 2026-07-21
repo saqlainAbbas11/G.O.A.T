@@ -1184,19 +1184,37 @@
 
 
 <footer style="border-top:1px solid var(--line);padding:48px 24px;">
-  <div style="max-width:1280px;margin:0 auto;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px;">
-    <div style="display:flex;align-items:center;gap:12px;">
-      <span class="font-display" style="font-size:26px;">10</span>
-      <span class="stripe-flag"><i></i><i></i><i></i></span>
+  <div style="max-width:1280px;margin:0 auto;display:flex;flex-direction:column;align-items:center;gap:20px;">
+    
+    <!-- Top Row: Logo + Links -->
+    <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;width:100%;gap:16px;">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <span class="font-display" style="font-size:26px;">10</span>
+        <span class="stripe-flag"><i></i><i></i><i></i></span>
+      </div>
+      <div style="display:flex;gap:20px;font-size:14px;font-weight:600;flex-wrap:wrap;">
+        <a href="#legacy" class="nav-link">Legacy</a>
+        <a href="#gallery" class="nav-link">Gallery</a>
+        <a href="#trophies" class="nav-link">Trophies</a>
+      </div>
     </div>
-    <p class="font-mono" style="font-size:11px;color:var(--text-soft);text-align:center;">FAN TRIBUTE PAGE · MADE WITH RESPECT</p>
-    <div style="display:flex;gap:20px;font-size:14px;font-weight:600;">
-      <a href="#legacy" class="nav-link">Legacy</a>
-      <a href="#gallery" class="nav-link">Gallery</a>
-      <a href="#trophies" class="nav-link">Trophies</a>
+    
+    <!-- Bottom Row: Credit + Your Name -->
+    <div style="display:flex;flex-direction:column;align-items:center;gap:4px;width:100%;">
+      <p class="font-mono" style="font-size:11px;color:var(--text-soft);text-align:center;">FAN TRIBUTE PAGE · MADE WITH RESPECT</p>
+      
+      <!-- Saqlain Abbas - Simple Name Link -->
+      <a href="https://www.linkedin.com/in/saqlainabbas11" target="_blank" rel="noopener noreferrer" 
+         style="color:var(--azure-deep);font-size:10px;font-family:'JetBrains Mono',monospace;text-decoration:underline;transition:color 0.3s ease;"
+         onmouseover="this.style.color='var(--rose)'"
+         onmouseout="this.style.color='var(--azure-deep)'">
+        Saqlain Abbas
+      </a>
     </div>
+    
   </div>
 </footer>
+
 
 <script>
 // Animate G.O.A.T section on scroll
