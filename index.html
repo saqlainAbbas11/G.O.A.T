@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -15,6 +16,8 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Swiper/9.4.1/swiper-bundle.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Swiper/9.4.1/swiper-bundle.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<!-- Replace the current anime.js script with this -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
 
 <style>
   :root{
@@ -1744,13 +1747,15 @@ document.querySelector('.marquee-wrap')?.addEventListener('mouseleave',()=>{ doc
   }
   const texture = makeBallTexture(); texture.wrapS = THREE.RepeatWrapping;
 
-  const geo = new THREE.IcosahedronGeometry(2,3);
+  // Use a lower-poly ball on mobile for performance
+  const isMobile = window.innerWidth < 768;
+  const geo = new THREE.IcosahedronGeometry(isMobile ? 1.8 : 2, isMobile ? 2 : 3);
   const mat = new THREE.MeshStandardMaterial({ map:texture, roughness:.5, metalness:.1 });
   const ball = new THREE.Mesh(geo, mat);
   ball.position.set(2.6,-0.3,0);
   scene.add(ball);
 
-  const haloGeo = new THREE.IcosahedronGeometry(2.35,1);
+  const haloGeo = new THREE.IcosahedronGeometry(isMobile ? 2.1 : 2.35, isMobile ? 1 : 1);
   const haloMat = new THREE.MeshBasicMaterial({ color:0x1C7FE0, wireframe:true, transparent:true, opacity:.2 });
   const halo = new THREE.Mesh(haloGeo, haloMat); ball.add(halo);
 
@@ -1758,12 +1763,12 @@ document.querySelector('.marquee-wrap')?.addEventListener('mouseleave',()=>{ doc
   const fill = new THREE.DirectionalLight(0xFF3D77,0.5); fill.position.set(-5,-2,3); scene.add(fill);
   const amb = new THREE.AmbientLight(0xffffff,0.55); scene.add(amb);
 
-  const pCount = 90;
+  const pCount = isMobile ? 45 : 90;
   const pGeo = new THREE.BufferGeometry();
   const positions = new Float32Array(pCount*3);
   for(let i=0;i<pCount;i++){ positions[i*3]=(Math.random()-0.5)*14; positions[i*3+1]=(Math.random()-0.5)*8; positions[i*3+2]=(Math.random()-0.5)*6-2; }
   pGeo.setAttribute('position', new THREE.BufferAttribute(positions,3));
-  const pMat = new THREE.PointsMaterial({ color:0x4FC3FF, size:.04, transparent:true, opacity:.55 });
+  const pMat = new THREE.PointsMaterial({ color:0x4FC3FF, size:isMobile ? 0.03 : 0.04, transparent:true, opacity:.55 });
   const particles = new THREE.Points(pGeo, pMat); scene.add(particles);
 
   /* drag interaction + light trail */
@@ -1851,6 +1856,265 @@ document.querySelector('.marquee-wrap')?.addEventListener('mouseleave',()=>{ doc
   }
   animate();
 })();
+
+/* ---------- ANIME.JS INTEGRATION ---------- */
+function animeInit() {
+  // Check if anime is available and is a function
+  if (typeof anime === 'undefined' || typeof anime !== 'function') {
+    console.warn('Anime.js not loaded properly, using fallback animations');
+    fallbackAnimations();
+    return;
+  }
+
+  try {
+    // 1. Animate Hero Stats Counters
+    document.querySelectorAll('.foil-card .stat-num').forEach((el, index) => {
+      const target = parseInt(el.closest('.foil-card').dataset.count) || 0;
+      const suffix = el.closest('.foil-card').dataset.suffix || '';
+      anime({
+        targets: el,
+        innerHTML: [0, target],
+        round: 1,
+        easing: 'easeOutCubic',
+        duration: 2000 + (index * 100),
+        delay: 300 + (index * 60),
+        update: function(anim) {
+          el.textContent = Math.round(anim.animations[0].currentValue) + suffix;
+        }
+      });
+    });
+
+    // 2. Animate Trait Bars with IntersectionObserver
+    const traitObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const bar = entry.target;
+          const targetWidth = parseInt(bar.dataset.w) || 0;
+          anime({
+            targets: bar,
+            width: targetWidth + '%',
+            easing: 'easeOutQuad',
+            duration: 1200,
+            delay: 200,
+          });
+          traitObserver.unobserve(bar);
+        }
+      });
+    }, { threshold: 0.3 });
+
+    document.querySelectorAll('.trait-fill').forEach(bar => {
+      traitObserver.observe(bar);
+    });
+
+    // 3. Animate Hero Elements on Load - BUT skip the title letters as GSAP handles them
+    // Only animate the eyebrow, subtitle, and CTA
+    anime({
+      targets: '#heroTag .eyebrow',
+      opacity: [0, 1],
+      translateX: [-20, 0],
+      easing: 'easeOutQuad',
+      duration: 800,
+      delay: 100
+    });
+
+    // Fade in hero subtitle and CTA
+    const heroSub = document.querySelector('#heroSub');
+    const heroCta = document.querySelector('#heroCta');
+    if (heroSub && heroCta) {
+      heroSub.style.opacity = '0';
+      heroCta.style.opacity = '0';
+      anime({
+        targets: [heroSub, heroCta],
+        opacity: [0, 1],
+        translateY: [20, 0],
+        easing: 'easeOutQuad',
+        duration: 700,
+        delay: 600,
+      });
+    }
+  } catch (error) {
+    console.warn('Anime.js animation error, using fallback:', error);
+    fallbackAnimations();
+  }
+}
+
+/* ---------- FALLBACK ANIMATIONS (if anime.js fails) ---------- */
+function fallbackAnimations() {
+  // 1. Simple counter animation using requestAnimationFrame
+  document.querySelectorAll('.foil-card .stat-num').forEach((el, index) => {
+    const target = parseInt(el.closest('.foil-card').dataset.count) || 0;
+    const suffix = el.closest('.foil-card').dataset.suffix || '';
+    let startTime = null;
+    const duration = 2000 + (index * 100);
+    
+    function animateCounter(timestamp) {
+      if (!startTime) startTime = timestamp;
+      const progress = Math.min((timestamp - startTime) / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      const current = Math.round(eased * target);
+      el.textContent = current + suffix;
+      
+      if (progress < 1) {
+        requestAnimationFrame(animateCounter);
+      } else {
+        el.textContent = target + suffix;
+      }
+    }
+    
+    setTimeout(() => {
+      requestAnimationFrame(animateCounter);
+    }, 300 + (index * 60));
+  });
+
+  // 2. Trait bars with IntersectionObserver
+  const traitObserver = new IntersectionObserver((entries) => {
+    entries.forEach((entry, index) => {
+      if (entry.isIntersecting) {
+        const bar = entry.target;
+        const targetWidth = bar.dataset.w + '%';
+        setTimeout(() => {
+          bar.style.width = targetWidth;
+        }, index * 120);
+        traitObserver.unobserve(bar);
+      }
+    });
+  }, { threshold: 0.3 });
+
+  document.querySelectorAll('.trait-fill').forEach(bar => {
+    traitObserver.observe(bar);
+  });
+
+  // 3. Simple hero animations using CSS transitions (only for elements not handled by GSAP)
+  // We skip the title letters as GSAP handles them
+  const heroSub = document.querySelector('#heroSub');
+  const heroCta = document.querySelector('#heroCta');
+  if (heroSub) {
+    setTimeout(() => {
+      heroSub.style.transition = 'opacity 0.7s ease, transform 0.7s cubic-bezier(0.22, 1, 0.36, 1)';
+      heroSub.style.opacity = '1';
+      heroSub.style.transform = 'translateY(0)';
+    }, 600);
+  }
+  if (heroCta) {
+    setTimeout(() => {
+      heroCta.style.transition = 'opacity 0.7s ease, transform 0.7s cubic-bezier(0.22, 1, 0.36, 1)';
+      heroCta.style.opacity = '1';
+      heroCta.style.transform = 'translateY(0)';
+    }, 700);
+  }
+}
+
+// Execute animeInit when DOM is ready - ONLY ONCE
+document.addEventListener('DOMContentLoaded', function() {
+  // Wait for preloader to finish
+  const preloaderCheck = setInterval(() => {
+    const preloader = document.getElementById('preloader');
+    if (preloader && preloader.style.display === 'none') {
+      clearInterval(preloaderCheck);
+      // Small delay to ensure anime.js is fully loaded
+      setTimeout(animeInit, 300);
+    }
+  }, 100);
+  
+  // Fallback: if preloader doesn't hide in 5 seconds, run anyway
+  setTimeout(() => {
+    const preloader = document.getElementById('preloader');
+    if (preloader && preloader.style.display !== 'none') {
+      clearInterval(preloaderCheck);
+      animeInit();
+    }
+  }, 5000);
+});
+
+/* ---------- FALLBACK ANIMATIONS (if anime.js fails) ---------- */
+function fallbackAnimations() {
+  // 1. Simple counter animation using requestAnimationFrame
+  document.querySelectorAll('.foil-card .stat-num').forEach((el, index) => {
+    const target = parseInt(el.closest('.foil-card').dataset.count) || 0;
+    const suffix = el.closest('.foil-card').dataset.suffix || '';
+    let startTime = null;
+    const duration = 2000 + (index * 100);
+    
+    function animateCounter(timestamp) {
+      if (!startTime) startTime = timestamp;
+      const progress = Math.min((timestamp - startTime) / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      const current = Math.round(eased * target);
+      el.textContent = current + suffix;
+      
+      if (progress < 1) {
+        requestAnimationFrame(animateCounter);
+      } else {
+        el.textContent = target + suffix;
+      }
+    }
+    
+    setTimeout(() => {
+      requestAnimationFrame(animateCounter);
+    }, 300 + (index * 60));
+  });
+
+  // 2. Trait bars with IntersectionObserver
+  const traitObserver = new IntersectionObserver((entries) => {
+    entries.forEach((entry, index) => {
+      if (entry.isIntersecting) {
+        const bar = entry.target;
+        const targetWidth = bar.dataset.w + '%';
+        setTimeout(() => {
+          bar.style.width = targetWidth;
+        }, index * 120);
+        traitObserver.unobserve(bar);
+      }
+    });
+  }, { threshold: 0.3 });
+
+  document.querySelectorAll('.trait-fill').forEach(bar => {
+    traitObserver.observe(bar);
+  });
+
+  // 3. Simple hero animations using CSS transitions
+  document.querySelectorAll('.hero-title .line span').forEach((el, i) => {
+    setTimeout(() => {
+      el.style.transition = 'transform 0.9s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.9s ease';
+      el.style.transform = 'translateY(0)';
+      el.style.opacity = '1';
+    }, 200 + (i * 30));
+  });
+}
+
+// Execute animeInit when DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+  // Wait for preloader to finish
+  const preloaderCheck = setInterval(() => {
+    const preloader = document.getElementById('preloader');
+    if (preloader && preloader.style.display === 'none') {
+      clearInterval(preloaderCheck);
+      // Small delay to ensure anime.js is fully loaded
+      setTimeout(animeInit, 300);
+    }
+  }, 100);
+  
+  // Fallback: if preloader doesn't hide in 5 seconds, run anyway
+  setTimeout(() => {
+    const preloader = document.getElementById('preloader');
+    if (preloader && preloader.style.display !== 'none') {
+      clearInterval(preloaderCheck);
+      animeInit();
+    }
+  }, 5000);
+});
+
+// Execute animeInit when DOM is ready and after preloader
+document.addEventListener('DOMContentLoaded', () => {
+  // Wait for preloader to finish
+  const preloaderCheck = setInterval(() => {
+    const preloader = document.getElementById('preloader');
+    if (preloader && preloader.style.display === 'none') {
+      clearInterval(preloaderCheck);
+      animeInit();
+    }
+  }, 100);
+});
 
 /* ---------- RESPONSIVE NAV FALLBACK ---------- */
 function applyResponsiveNav(){
